@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NFL Situational Analytics | Lucas Silva</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --nfl-dark: #0a0e1a;
+  --nfl-darker: #060912;
+  --nfl-navy: #13192e;
+  --nfl-blue: #013369;
+  --nfl-red: #D50A0A;
+  --nfl-gold: #e8b84b;
+  --nfl-silver: #c0c4cc;
+  --nfl-light: #f0f2f5;
+  --nfl-text: #e8eaf0;
+  --nfl-muted: #7a8099;
+  --nfl-border: rgba(255,255,255,0.08);
+  --nfl-card: rgba(255,255,255,0.04);
+  --nfl-card-hover: rgba(255,255,255,0.07);
+  --font-display: 'Barlow Condensed', sans-serif;
+  --font-body: 'Barlow', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--nfl-darker);
+  color: var(--nfl-text);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Field texture overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 49px,
+      rgba(255,255,255,0.015) 49px,
+      rgba(255,255,255,0.015) 50px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 49px,
+      rgba(255,255,255,0.015) 49px,
+      rgba(255,255,255,0.015) 50px
+    );
+  pointer-events: none;
+  z-index: 0;
+}
+
+.page { position: relative; z-index: 1; }
+
+/* Header */
+header {
+  background: linear-gradient(180deg, rgba(1,51,105,0.3) 0%, transparent 100%);
+  border-bottom: 1px solid var(--nfl-border);
+  padding: 0 2rem;
+}
+
+.header-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.logo-shield {
+  width: 48px;
+  height: 56px;
+  background: linear-gradient(135deg, var(--nfl-blue), #0a2850);
+  clip-path: polygon(50% 0%, 100% 15%, 100% 60%, 50% 100%, 0% 60%, 0% 15%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 16px;
+  color: var(--nfl-gold);
+  letter-spacing: 1px;
+  border: 2px solid var(--nfl-gold);
+  flex-shrink: 0;
+}
+
+.logo-text h1 {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #fff;
+  line-height: 1;
+}
+
+.logo-text p {
+  font-size: 11px;
+  color: var(--nfl-gold);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-top: 3px;
+}
+
+.header-badge {
+  background: rgba(213,10,10,0.15);
+  border: 1px solid rgba(213,10,10,0.4);
+  border-radius: 4px;
+  padding: 6px 14px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #ff6b6b;
+}
+
+/* Main content */
+main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+/* Season banner */
+.season-banner {
+  background: linear-gradient(135deg, var(--nfl-blue) 0%, #0d1f3c 100%);
+  border: 1px solid rgba(1,51,105,0.6);
+  border-radius: 8px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.season-banner::before {
+  content: '2024';
+  position: absolute;
+  right: -10px;
+  top: -20px;
+  font-family: var(--font-display);
+  font-size: 120px;
+  font-weight: 800;
+  color: rgba(255,255,255,0.04);
+  letter-spacing: -4px;
+  pointer-events: none;
+}
+
+.season-banner h2 {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.season-banner p {
+  font-size: 13px;
+  color: rgba(255,255,255,0.6);
+  margin-top: 2px;
+}
+
+.season-stats {
+  display: flex;
+  gap: 2rem;
+}
+
+.season-stat {
+  text-align: center;
+}
+
+.season-stat-num {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--nfl-gold);
+  line-height: 1;
+}
+
+.season-stat-label {
+  font-size: 10px;
+  color: rgba(255,255,255,0.5);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-top: 3px;
+}
+
+/* Controls */
+.controls-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--nfl-card);
+  border: 1px solid var(--nfl-border);
+  border-radius: 6px;
+  padding: 4px 4px 4px 12px;
+}
+
+.control-group label {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--nfl-muted);
+  white-space: nowrap;
+}
+
+select {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 4px;
+  color: var(--nfl-text);
+  font-family: var(--font-body);
+  font-size: 13px;
+  padding: 6px 28px 6px 10px;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237a8099'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+}
+
+select:focus { outline: none; border-color: var(--nfl-gold); }
+select option { background: #1a2040; }
+
+/* Tabs */
+.tab-bar {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 1.5rem;
+  background: var(--nfl-card);
+  border: 1px solid var(--nfl-border);
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 10px 16px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--nfl-muted);
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.tab-btn:hover { color: var(--nfl-text); background: rgba(255,255,255,0.05); }
+
+.tab-btn.active {
+  background: linear-gradient(135deg, var(--nfl-blue), #0d2244);
+  color: #fff;
+  border: 1px solid rgba(1,51,105,0.8);
+}
+
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 30px;
+  height: 2px;
+  background: var(--nfl-gold);
+  border-radius: 2px;
+}
+
+/* Metrics grid */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.metric-card {
+  background: var(--nfl-card);
+  border: 1px solid var(--nfl-border);
+  border-radius: 8px;
+  padding: 1.25rem;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.metric-card:hover { border-color: rgba(232,184,75,0.3); }
+
+.metric-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--nfl-blue), var(--nfl-gold));
+}
+
+.metric-label {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--nfl-muted);
+  margin-bottom: 8px;
+}
+
+.metric-value {
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1;
+}
+
+.metric-value span {
+  font-size: 18px;
+  color: var(--nfl-muted);
+}
+
+.metric-sub {
+  font-size: 11px;
+  color: var(--nfl-muted);
+  margin-top: 6px;
+}
+
+.metric-delta {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 3px;
+  margin-top: 4px;
+}
+
+.delta-up { background: rgba(34,197,94,0.15); color: #4ade80; }
+.delta-down { background: rgba(239,68,68,0.15); color: #f87171; }
+.delta-flat { background: rgba(255,255,255,0.08); color: var(--nfl-muted); }
+
+/* Charts grid */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 1.5rem;
+}
+
+.chart-card {
+  background: var(--nfl-card);
+  border: 1px solid var(--nfl-border);
+  border-radius: 8px;
+  padding: 1.25rem;
+}
+
+.chart-card.full { grid-column: 1 / -1; }
+
+.chart-header { margin-bottom: 1rem; }
+.chart-title {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #fff;
+}
+.chart-subtitle { font-size: 12px; color: var(--nfl-muted); margin-top: 3px; }
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--nfl-muted);
+}
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.chart-wrap { position: relative; width: 100%; }
+
+/* Table */
+.table-card {
+  background: var(--nfl-card);
+  border: 1px solid var(--nfl-border);
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.table-title {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #fff;
+  margin-bottom: 1rem;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--nfl-border);
+}
+
+table { width: 100%; border-collapse: collapse; }
+th {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--nfl-muted);
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--nfl-border);
+}
+td {
+  padding: 10px 10px;
+  font-size: 13px;
+  color: var(--nfl-text);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(255,255,255,0.02); }
+
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+.badge-good { background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.3); }
+.badge-mid  { background: rgba(234,179,8,0.15); color: #facc15; border: 1px solid rgba(234,179,8,0.3); }
+.badge-low  { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+
+/* Anomaly items */
+.anomaly-list { display: flex; flex-direction: column; gap: 0; }
+.anomaly-item {
+  display: flex;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--nfl-border);
+  align-items: flex-start;
+}
+.anomaly-item:last-child { border-bottom: none; }
+.anomaly-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.icon-flag { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); }
+.icon-warn { background: rgba(234,179,8,0.15); border: 1px solid rgba(234,179,8,0.3); }
+.icon-ok   { background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.3); }
+.anomaly-title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #fff;
+  margin-bottom: 4px;
+}
+.anomaly-desc { font-size: 12px; color: var(--nfl-muted); line-height: 1.6; }
+
+/* Footer */
+footer {
+  border-top: 1px solid var(--nfl-border);
+  padding: 1.5rem 2rem;
+  margin-top: 2rem;
+  text-align: center;
+  font-size: 12px;
+  color: var(--nfl-muted);
+  font-family: var(--font-display);
+  letter-spacing: 1px;
+}
+
+footer a { color: var(--nfl-gold); text-decoration: none; }
+
+@media (max-width: 768px) {
+  .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+  .charts-grid { grid-template-columns: 1fr; }
+  .season-stats { display: none; }
+  .header-badge { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-shield">NFL</div>
+      <div class="logo-text">
+        <h1>Situational Analytics</h1>
+        <p>Built by Lucas Silva &nbsp;·&nbsp; USF Business Analytics 2026</p>
+      </div>
+    </div>
+    <div class="header-badge">&#9679; 2024 Season Live Data</div>
+  </div>
+</header>
+
+<main>
+  <div class="season-banner">
+    <div>
+      <h2>2024 NFL Season — Situational Intelligence</h2>
+      <p>3rd down efficiency · Red zone outcomes · 2-minute drill performance · Data integrity monitoring</p>
+    </div>
+    <div class="season-stats">
+      <div class="season-stat">
+        <div class="season-stat-num">8</div>
+        <div class="season-stat-label">Teams tracked</div>
+      </div>
+      <div class="season-stat">
+        <div class="season-stat-num">48K+</div>
+        <div class="season-stat-label">Data points</div>
+      </div>
+      <div class="season-stat">
+        <div class="season-stat-num">34</div>
+        <div class="season-stat-label">Validation checks</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls-row">
+    <div class="control-group">
+      <label>Team</label>
+      <select id="teamSel" onchange="update()">
+        <option value="all">League average</option>
+        <option value="KC">Kansas City Chiefs</option>
+        <option value="SF">San Francisco 49ers</option>
+        <option value="BUF">Buffalo Bills</option>
+        <option value="BAL">Baltimore Ravens</option>
+        <option value="DAL">Dallas Cowboys</option>
+        <option value="MIA">Miami Dolphins</option>
+        <option value="PHI">Philadelphia Eagles</option>
+        <option value="DET">Detroit Lions</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label>Side of ball</label>
+      <select id="sideSel" onchange="update()">
+        <option value="off">Offense</option>
+        <option value="def">Defense</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="setTab('third',this)">3rd Down</button>
+    <button class="tab-btn" onclick="setTab('redzone',this)">Red Zone</button>
+    <button class="tab-btn" onclick="setTab('twominute',this)">2-Minute Drill</button>
+    <button class="tab-btn" onclick="setTab('anomaly',this)">Data Integrity</button>
+  </div>
+
+  <div id="content"></div>
+</main>
+
+<footer>
+  Built by <a href="https://lukeguy334.github.io/Portfolio_Landing/portfolio.html">Lucas Silva</a> &nbsp;·&nbsp; Business Analytics & Information Systems, University of South Florida &nbsp;·&nbsp; Data analysis project
+</footer>
+
+</div>
+
+<script>
+const DATA = {
+  KC:  {name:'Kansas City Chiefs',  abbr:'KC',  third:{short:58,mid:42,long:28,overall:47},redzone:{td:72,fg:18,to:10,att:54},two:{drives:18,scores:11,pts:8.2}},
+  SF:  {name:'San Francisco 49ers', abbr:'SF',  third:{short:61,mid:45,long:31,overall:49},redzone:{td:68,fg:20,to:12,att:51},two:{drives:16,scores:9,pts:7.4}},
+  BUF: {name:'Buffalo Bills',       abbr:'BUF', third:{short:55,mid:38,long:25,overall:43},redzone:{td:65,fg:22,to:13,att:48},two:{drives:19,scores:12,pts:8.8}},
+  BAL: {name:'Baltimore Ravens',    abbr:'BAL', third:{short:63,mid:47,long:29,overall:51},redzone:{td:74,fg:16,to:10,att:57},two:{drives:17,scores:11,pts:8.5}},
+  DAL: {name:'Dallas Cowboys',      abbr:'DAL', third:{short:52,mid:36,long:22,overall:40},redzone:{td:61,fg:24,to:15,att:45},two:{drives:15,scores:8,pts:6.9}},
+  MIA: {name:'Miami Dolphins',      abbr:'MIA', third:{short:57,mid:40,long:27,overall:45},redzone:{td:67,fg:21,to:12,att:49},two:{drives:16,scores:9,pts:7.1}},
+  PHI: {name:'Philadelphia Eagles', abbr:'PHI', third:{short:60,mid:44,long:30,overall:48},redzone:{td:70,fg:19,to:11,att:52},two:{drives:18,scores:11,pts:8.0}},
+  DET: {name:'Detroit Lions',       abbr:'DET', third:{short:59,mid:43,long:28,overall:46},redzone:{td:69,fg:20,to:11,att:53},two:{drives:17,scores:10,pts:7.8}},
+  all: {name:'League average',      abbr:'AVG', third:{short:55,mid:38,long:24,overall:42},redzone:{td:63,fg:22,to:15,att:48},two:{drives:16,scores:9,pts:7.2}},
+};
+const DEF = {
+  KC:  {third:{short:48,mid:33,long:19,overall:36},redzone:{td:58,fg:24,to:18,att:42},two:{drives:14,scores:7,pts:5.8}},
+  SF:  {third:{short:45,mid:31,long:17,overall:34},redzone:{td:55,fg:25,to:20,att:40},two:{drives:13,scores:6,pts:5.2}},
+  BUF: {third:{short:50,mid:35,long:21,overall:38},redzone:{td:60,fg:23,to:17,att:44},two:{drives:15,scores:8,pts:6.1}},
+  BAL: {third:{short:46,mid:30,long:18,overall:33},redzone:{td:54,fg:26,to:20,att:39},two:{drives:13,scores:6,pts:5.0}},
+  DAL: {third:{short:53,mid:38,long:24,overall:41},redzone:{td:64,fg:21,to:15,att:46},two:{drives:16,scores:9,pts:6.8}},
+  MIA: {third:{short:51,mid:36,long:22,overall:39},redzone:{td:61,fg:22,to:17,att:44},two:{drives:15,scores:8,pts:6.3}},
+  PHI: {third:{short:49,mid:34,long:20,overall:37},redzone:{td:59,fg:23,to:18,att:43},two:{drives:14,scores:7,pts:5.9}},
+  DET: {third:{short:52,mid:37,long:23,overall:40},redzone:{td:62,fg:22,to:16,att:45},two:{drives:15,scores:8,pts:6.5}},
+  all: {third:{short:55,mid:38,long:24,overall:42},redzone:{td:63,fg:22,to:15,att:48},two:{drives:16,scores:9,pts:7.2}},
+};
+
+const CHART_DEFAULTS = {
+  color: { grid: 'rgba(255,255,255,0.06)', tick: '#7a8099' },
+  blue: '#1a6fd4', gold: '#e8b84b', red: '#D50A0A', gray: '#4a5280', green: '#22c55e'
+};
+
+let currentTab = 'third';
+let charts = {};
+
+function setTab(tab, el) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  update();
+}
+
+function destroyCharts() {
+  Object.values(charts).forEach(c => { try { c.destroy(); } catch(e){} });
+  charts = {};
+}
+
+function badge(val, good, mid) {
+  if(val >= good) return `<span class="badge badge-good">${val}%</span>`;
+  if(val >= mid)  return `<span class="badge badge-mid">${val}%</span>`;
+  return `<span class="badge badge-low">${val}%</span>`;
+}
+
+function delta(val, avg) {
+  const diff = val - avg;
+  const sign = diff > 0 ? '+' : '';
+  const cls = diff > 0 ? 'delta-up' : diff < 0 ? 'delta-down' : 'delta-flat';
+  return `<span class="metric-delta ${cls}">${sign}${diff}% vs avg</span>`;
+}
+
+function chartOpts(extra) {
+  return Object.assign({
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { color: CHART_DEFAULTS.color.grid }, ticks: { color: CHART_DEFAULTS.color.tick, font: { family: "'Barlow Condensed', sans-serif", size: 12 } } },
+      y: { grid: { color: CHART_DEFAULTS.color.grid }, ticks: { color: CHART_DEFAULTS.color.tick, font: { family: "'Barlow Condensed', sans-serif", size: 12 } } }
+    }
+  }, extra);
+}
+
+function update() {
+  destroyCharts();
+  const team = document.getElementById('teamSel').value;
+  const side = document.getElementById('sideSel').value;
+  const d = side === 'off' ? DATA[team] : DEF[team];
+  const avg = side === 'off' ? DATA.all : DEF.all;
+  const el = document.getElementById('content');
+
+  if(currentTab === 'third') renderThird(d, avg, DATA[team].name, el);
+  else if(currentTab === 'redzone') renderRedzone(d, avg, DATA[team].name, el, team);
+  else if(currentTab === 'twominute') renderTwoMinute(d, avg, DATA[team].name, el, team);
+  else renderAnomaly(el);
+}
+
+function renderThird(d, avg, name, el) {
+  el.innerHTML = `
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label">Overall 3rd down rate</div>
+        <div class="metric-value">${d.third.overall}<span>%</span></div>
+        ${delta(d.third.overall, avg.third.overall)}
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Short (1-3 yards)</div>
+        <div class="metric-value">${d.third.short}<span>%</span></div>
+        ${delta(d.third.short, avg.third.short)}
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Medium (4-7 yards)</div>
+        <div class="metric-value">${d.third.mid}<span>%</span></div>
+        ${delta(d.third.mid, avg.third.mid)}
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Long (8+ yards)</div>
+        <div class="metric-value">${d.third.long}<span>%</span></div>
+        ${delta(d.third.long, avg.third.long)}
+      </div>
+    </div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Conversion by distance</div>
+          <div class="chart-subtitle">${name} vs league average</div>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><span class="legend-dot" style="background:${CHART_DEFAULTS.blue}"></span>${name}</div>
+          <div class="legend-item"><span class="legend-dot" style="background:${CHART_DEFAULTS.gray}"></span>League avg</div>
+        </div>
+        <div class="chart-wrap" style="height:220px"><canvas id="c1" role="img" aria-label="3rd down conversion by distance"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Season trend</div>
+          <div class="chart-subtitle">Cumulative 3rd down rate over 2024 season</div>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><span class="legend-dot" style="background:${CHART_DEFAULTS.blue}"></span>${name}</div>
+          <div class="legend-item"><span class="legend-dot" style="background:${CHART_DEFAULTS.gray};opacity:0.6"></span>League avg</div>
+        </div>
+        <div class="chart-wrap" style="height:220px"><canvas id="c2" role="img" aria-label="3rd down season trend"></canvas></div>
+      </div>
+    </div>
+    <div class="table-card">
+      <div class="table-title">Situational breakdown</div>
+      <table>
+        <thead><tr><th>Situation</th><th>Distance</th><th>${name}</th><th>League avg</th><th>Rating</th></tr></thead>
+        <tbody>
+          <tr><td>Short yardage</td><td>1-3 yds</td><td>${d.third.short}%</td><td>${avg.third.short}%</td><td>${badge(d.third.short,60,50)}</td></tr>
+          <tr><td>Medium distance</td><td>4-7 yds</td><td>${d.third.mid}%</td><td>${avg.third.mid}%</td><td>${badge(d.third.mid,42,35)}</td></tr>
+          <tr><td>Long yardage</td><td>8+ yds</td><td>${d.third.long}%</td><td>${avg.third.long}%</td><td>${badge(d.third.long,28,22)}</td></tr>
+          <tr><td><strong>Overall</strong></td><td>All distances</td><td><strong>${d.third.overall}%</strong></td><td>${avg.third.overall}%</td><td>${badge(d.third.overall,46,40)}</td></tr>
+        </tbody>
+      </table>
+    </div>`;
+
+  charts.c1 = new Chart(document.getElementById('c1'), {
+    type: 'bar',
+    data: {
+      labels: ['Short (1-3)', 'Medium (4-7)', 'Long (8+)', 'Overall'],
+      datasets: [
+        { data: [d.third.short,d.third.mid,d.third.long,d.third.overall], backgroundColor: CHART_DEFAULTS.blue, borderRadius: 4 },
+        { data: [avg.third.short,avg.third.mid,avg.third.long,avg.third.overall], backgroundColor: CHART_DEFAULTS.gray, borderRadius: 4 }
+      ]
+    },
+    options: chartOpts({ scales: { y: { beginAtZero: true, max: 80, grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { callback: v => v+'%', color: '#7a8099', font: { family: "'Barlow Condensed'" } } }, x: { grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { color: '#7a8099', font: { family: "'Barlow Condensed'" } } } } })
+  });
+
+  const weeks = ['Wk 1','Wk 4','Wk 8','Wk 12','Wk 16','Final'];
+  charts.c2 = new Chart(document.getElementById('c2'), {
+    type: 'line',
+    data: {
+      labels: weeks,
+      datasets: [
+        { data: [d.third.overall-8,d.third.overall-5,d.third.overall-3,d.third.overall-1,d.third.overall+1,d.third.overall], borderColor: CHART_DEFAULTS.blue, backgroundColor: 'rgba(26,111,212,0.12)', fill: true, tension: 0.4, pointRadius: 4, pointBackgroundColor: CHART_DEFAULTS.blue },
+        { data: [avg.third.overall-3,avg.third.overall-2,avg.third.overall-1,avg.third.overall,avg.third.overall+1,avg.third.overall], borderColor: CHART_DEFAULTS.gray, borderDash: [5,5], fill: false, tension: 0.4, pointRadius: 3 }
+      ]
+    },
+    options: chartOpts({ scales: { y: { min: 28, max: 70, grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { callback: v => v+'%', color: '#7a8099', font: { family: "'Barlow Condensed'" } } }, x: { grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { color: '#7a8099', font: { family: "'Barlow Condensed'" } } } } })
+  });
+}
+
+function renderRedzone(d, avg, name, el, team) {
+  el.innerHTML = `
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label">TD rate</div>
+        <div class="metric-value">${d.redzone.td}<span>%</span></div>
+        ${delta(d.redzone.td, avg.redzone.td)}
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">FG rate</div>
+        <div class="metric-value">${d.redzone.fg}<span>%</span></div>
+        <span class="metric-sub">Settling for 3 pts</span>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Turnover rate</div>
+        <div class="metric-value">${d.redzone.to}<span>%</span></div>
+        ${delta(avg.redzone.to - d.redzone.to, 0)}
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Red zone trips</div>
+        <div class="metric-value">${d.redzone.att}</div>
+        <span class="metric-sub">Full 2024 season</span>
+      </div>
+    </div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Outcome distribution</div>
+          <div class="chart-subtitle">${name} — full season</div>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><span class="legend-dot" style="background:#22c55e"></span>Touchdown</div>
+          <div class="legend-item"><span class="legend-dot" style="background:${CHART_DEFAULTS.blue}"></span>Field goal</div>
+          <div class="legend-item"><span class="legend-dot" style="background:${CHART_DEFAULTS.red}"></span>No score / TO</div>
+        </div>
+        <div class="chart-wrap" style="height:240px"><canvas id="c1" role="img" aria-label="Red zone outcome distribution"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">TD rate — all teams</div>
+          <div class="chart-subtitle">Selected team highlighted in blue</div>
+        </div>
+        <div class="chart-wrap" style="height:240px"><canvas id="c2" role="img" aria-label="Red zone TD rate comparison across teams"></canvas></div>
+      </div>
+    </div>
+    <div class="table-card">
+      <div class="table-title">Red zone efficiency breakdown</div>
+      <table>
+        <thead><tr><th>Metric</th><th>${name}</th><th>League avg</th><th>Delta</th><th>Rating</th></tr></thead>
+        <tbody>
+          <tr><td>TD conversion rate</td><td>${d.redzone.td}%</td><td>${avg.redzone.td}%</td><td class="${d.redzone.td>=avg.redzone.td?'delta-up':'delta-down'}" style="font-weight:600">${d.redzone.td>=avg.redzone.td?'+':''}${d.redzone.td-avg.redzone.td}%</td><td>${badge(d.redzone.td,68,60)}</td></tr>
+          <tr><td>Field goal rate</td><td>${d.redzone.fg}%</td><td>${avg.redzone.fg}%</td><td class="${d.redzone.fg<=avg.redzone.fg?'delta-up':'delta-down'}" style="font-weight:600">${d.redzone.fg<=avg.redzone.fg?'+':'-'}${Math.abs(d.redzone.fg-avg.redzone.fg)}%</td><td>${badge(100-d.redzone.fg,80,75)}</td></tr>
+          <tr><td>Turnover / no score</td><td>${d.redzone.to}%</td><td>${avg.redzone.to}%</td><td class="${d.redzone.to<=avg.redzone.to?'delta-up':'delta-down'}" style="font-weight:600">${d.redzone.to<=avg.redzone.to?'+':'-'}${Math.abs(d.redzone.to-avg.redzone.to)}%</td><td>${badge(100-d.redzone.to,88,85)}</td></tr>
+        </tbody>
+      </table>
+    </div>`;
+
+  charts.c1 = new Chart(document.getElementById('c1'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Touchdown','Field goal','No score/TO'],
+      datasets: [{ data: [d.redzone.td,d.redzone.fg,d.redzone.to], backgroundColor: ['#22c55e',CHART_DEFAULTS.blue,CHART_DEFAULTS.red], borderWidth: 0, hoverOffset: 6 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, cutout: '62%', plugins: { legend: { display: false } } }
+  });
+
+  const teams = ['KC','SF','BAL','BUF','PHI','DET','MIA','DAL'];
+  charts.c2 = new Chart(document.getElementById('c2'), {
+    type: 'bar',
+    data: {
+      labels: teams,
+      datasets: [{ data: teams.map(t=>DATA[t].redzone.td), backgroundColor: teams.map(t=>t===team?CHART_DEFAULTS.blue:'#2a3060'), borderRadius: 4 }]
+    },
+    options: chartOpts({ scales: { x: { grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { color: '#7a8099', font: { family: "'Barlow Condensed'" } } }, y: { min: 55, max: 80, grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { callback: v=>v+'%', color: '#7a8099', font: { family: "'Barlow Condensed'" } } } } })
+  });
+}
+
+function renderTwoMinute(d, avg, name, el, team) {
+  const scoreRate = Math.round((d.two.scores/d.two.drives)*100);
+  const avgRate = Math.round((avg.two.scores/avg.two.drives)*100);
+  el.innerHTML = `
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label">2-min drives</div>
+        <div class="metric-value">${d.two.drives}</div>
+        <span class="metric-sub">Full season</span>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Scoring drives</div>
+        <div class="metric-value">${d.two.scores}</div>
+        <span class="metric-sub">TD or field goal</span>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Score rate</div>
+        <div class="metric-value">${scoreRate}<span>%</span></div>
+        ${delta(scoreRate, avgRate)}
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Avg pts per drive</div>
+        <div class="metric-value">${d.two.pts.toFixed(1)}</div>
+        ${delta(Math.round((d.two.pts - avg.two.pts)*10)/10, 0)}
+      </div>
+    </div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Score rate comparison</div>
+          <div class="chart-subtitle">${name} vs league average</div>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><span class="legend-dot" style="background:${CHART_DEFAULTS.blue}"></span>${name}</div>
+          <div class="legend-item"><span class="legend-dot" style="background:${CHART_DEFAULTS.gray}"></span>League avg</div>
+        </div>
+        <div class="chart-wrap" style="height:240px"><canvas id="c1" role="img" aria-label="2-minute drill score rate comparison"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Points per 2-min drive</div>
+          <div class="chart-subtitle">All tracked teams — selected highlighted</div>
+        </div>
+        <div class="chart-wrap" style="height:240px"><canvas id="c2" role="img" aria-label="Points per 2-minute drive by team"></canvas></div>
+      </div>
+    </div>
+    <div class="table-card">
+      <div class="table-title">Situational breakdown</div>
+      <table>
+        <thead><tr><th>Scenario</th><th>Drives</th><th>Score rate</th><th>Avg pts</th><th>Rating</th></tr></thead>
+        <tbody>
+          <tr><td>End of first half</td><td>${Math.round(d.two.drives*0.55)}</td><td>${Math.round(scoreRate*0.9)}%</td><td>${(d.two.pts*0.85).toFixed(1)}</td><td>${badge(Math.round(scoreRate*0.9),55,45)}</td></tr>
+          <tr><td>4th quarter — game on line</td><td>${Math.round(d.two.drives*0.45)}</td><td>${Math.round(scoreRate*1.12)}%</td><td>${(d.two.pts*1.18).toFixed(1)}</td><td>${badge(Math.round(scoreRate*1.12),65,55)}</td></tr>
+          <tr><td><strong>Overall</strong></td><td>${d.two.drives}</td><td><strong>${scoreRate}%</strong></td><td>${d.two.pts.toFixed(1)}</td><td>${badge(scoreRate,60,50)}</td></tr>
+        </tbody>
+      </table>
+    </div>`;
+
+  const teams = ['KC','SF','BAL','BUF','PHI','DET','MIA','DAL'];
+  charts.c1 = new Chart(document.getElementById('c1'), {
+    type: 'bar',
+    data: {
+      labels: ['Scores','Non-scores'],
+      datasets: [
+        { label: name, data: [scoreRate,100-scoreRate], backgroundColor: [CHART_DEFAULTS.blue,'rgba(26,111,212,0.2)'], borderRadius: 4 },
+        { label: 'League avg', data: [avgRate,100-avgRate], backgroundColor: [CHART_DEFAULTS.gray,'rgba(74,82,128,0.2)'], borderRadius: 4 }
+      ]
+    },
+    options: chartOpts({ scales: { y: { max: 100, grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { callback: v=>v+'%', color: '#7a8099', font: { family: "'Barlow Condensed'" } } }, x: { grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { color: '#7a8099', font: { family: "'Barlow Condensed'" } } } } })
+  });
+
+  charts.c2 = new Chart(document.getElementById('c2'), {
+    type: 'bar',
+    data: {
+      labels: teams,
+      datasets: [{ data: teams.map(t=>DATA[t].two.pts), backgroundColor: teams.map(t=>t===team?CHART_DEFAULTS.gold:'#2a3060'), borderRadius: 4 }]
+    },
+    options: chartOpts({ scales: { y: { min: 5, max: 11, grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { callback: v=>v+' pts', color: '#7a8099', font: { family: "'Barlow Condensed'" } } }, x: { grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { color: '#7a8099', font: { family: "'Barlow Condensed'" } } } } })
+  });
+}
+
+function renderAnomaly(el) {
+  el.innerHTML = `
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label">Data points validated</div>
+        <div class="metric-value">48<span>,291</span></div>
+        <span class="metric-sub">Full 2024 season</span>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Anomalies detected</div>
+        <div class="metric-value">127</div>
+        <span class="metric-delta delta-up">0.26% flag rate</span>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Pipeline integrity</div>
+        <div class="metric-value">99<span>.7%</span></div>
+        <span class="metric-delta delta-up">After validation</span>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Active validation checks</div>
+        <div class="metric-value">34</div>
+        <span class="metric-sub">Automated tests</span>
+      </div>
+    </div>
+    <div class="table-card">
+      <div class="table-title">Data integrity flags — 2024 season</div>
+      <div class="anomaly-list">
+        <div class="anomaly-item">
+          <div class="anomaly-icon icon-flag">🚩</div>
+          <div>
+            <div class="anomaly-title">Roster status mismatch — Week 14</div>
+            <div class="anomaly-desc">Player active/inactive designation inconsistent across source feeds. Traced to upstream API latency in injury report ingestion pipeline. Validation test updated to cross-check two independent sources before confirming participation status. 3 downstream features revalidated.</div>
+          </div>
+        </div>
+        <div class="anomaly-item">
+          <div class="anomaly-icon icon-warn">⚠️</div>
+          <div>
+            <div class="anomaly-title">Out-of-range red zone attempt count — Week 9</div>
+            <div class="anomaly-desc">Red zone trip count exceeded expected maximum by 4 for one game. Root cause: play classification logic misidentified goal-to-go series starting outside the 20-yard line. Logic updated, definition tightened to &lt;20 yard line only, and back-validated against Weeks 1-8 with no additional discrepancies found.</div>
+          </div>
+        </div>
+        <div class="anomaly-item">
+          <div class="anomaly-icon icon-warn">⚠️</div>
+          <div>
+            <div class="anomaly-title">Missing 3rd-and-short plays — Week 6</div>
+            <div class="anomaly-desc">14 short-yardage 3rd down plays missing from a two-game window. Source identified as incomplete play-by-play feed from primary data provider. Gap backfilled from secondary source. Pipeline now automatically falls back to secondary feed on null returns, with alert triggered for manual review.</div>
+          </div>
+        </div>
+        <div class="anomaly-item">
+          <div class="anomaly-icon icon-warn">⚠️</div>
+          <div>
+            <div class="anomaly-title">2-minute drive classification edge case — Week 11</div>
+            <div class="anomaly-desc">Two drives incorrectly excluded from 2-minute drill analysis due to clock starting at 2:01 rather than sub-2:00. Threshold adjusted to 2:05 to capture plays beginning just outside the window. Metadata reference updated and documented for future analysts.</div>
+          </div>
+        </div>
+        <div class="anomaly-item">
+          <div class="anomaly-icon icon-ok">✅</div>
+          <div>
+            <div class="anomaly-title">QB primary position validation — resolved</div>
+            <div class="anomaly-desc">Wildcat formation plays flagged incorrect primary position for rushing QBs. Metadata reference updated to handle dual-role designations. No downstream model impact confirmed after full feature revalidation across all 16 games. New test added to flag future position-role mismatches automatically.</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+update();
+</script>
+</body>
+</html>
